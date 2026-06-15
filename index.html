@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Macko's Suit and Tiebrary</title>
+<title>Russell Readery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
@@ -15,20 +15,20 @@
      ============================================================ */
 
   :root{
-    --cream:#F1E7D2;
-    --paper:#FBF5E7;
-    --paper-edge:#EFE4CB;
-    --wood:#A67C55;
-    --wood-dark:#6E4C33;
-    --ink:#2C2017;
-    --ink-soft:#5A4A39;
-    --olive:#6E7A33;
-    --olive-deep:#525C24;
-    --tan:#C08A4E;
-    --rust:#9C552B;
-    --muted:#917f64;
-    --line:#D8C9A8;
-    --shadow:rgba(60,40,20,.18);
+    --cream:#EAE6D7;
+    --paper:#F7F4EC;
+    --paper-edge:#E3DCC8;
+    --wood:#90DAFC;
+    --wood-dark:#2A7AAC;
+    --ink:#173441;
+    --ink-soft:#3C5A68;
+    --olive:#3E93C9;
+    --olive-deep:#2A7AAC;
+    --tan:#E58C7B;
+    --rust:#D33B2C;
+    --muted:#7C93A0;
+    --line:#CBD9E1;
+    --shadow:rgba(30,70,100,.16);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -46,9 +46,9 @@
 
   /* ---------- Masthead ---------- */
   header.masthead{
-    background:linear-gradient(180deg,var(--wood),var(--wood-dark));
-    color:var(--paper);
-    border-bottom:5px solid var(--olive-deep);
+    background:linear-gradient(180deg,var(--wood),#6BC3EE);
+    color:var(--ink);
+    border-bottom:5px solid var(--rust);
     box-shadow:0 4px 14px var(--shadow);
   }
   .masthead-inner{
@@ -65,18 +65,18 @@
   .brand .sub{
     font-family:"Courier Prime",monospace;
     text-transform:uppercase;letter-spacing:3px;
-    font-size:12px;color:#E9D9B6;margin-top:6px;
+    font-size:12px;color:var(--ink-soft);margin-top:6px;
   }
   .brand{flex:1 1 auto;min-width:220px;}
   .owner-btn{
     font-family:"Courier Prime",monospace;font-size:12px;letter-spacing:1px;
     text-transform:uppercase;cursor:pointer;
-    background:rgba(255,255,255,.08);color:var(--paper);
-    border:1px solid rgba(255,255,255,.35);border-radius:4px;
+    background:rgba(23,52,65,.08);color:var(--ink);
+    border:1px solid rgba(23,52,65,.30);border-radius:4px;
     padding:9px 14px;white-space:nowrap;
   }
-  .owner-btn:hover{background:rgba(255,255,255,.18);}
-  .owner-btn.on{background:var(--olive);border-color:var(--olive);color:#fff;}
+  .owner-btn:hover{background:rgba(23,52,65,.16);}
+  .owner-btn.on{background:var(--wood-dark);border-color:var(--wood-dark);color:#fff;}
 
   /* ---------- Layout ---------- */
   main{max-width:1100px;margin:0 auto;padding:22px;}
@@ -114,14 +114,14 @@
   .btn{
     font-family:"Courier Prime",monospace;font-size:12px;letter-spacing:1px;
     text-transform:uppercase;cursor:pointer;border-radius:6px;
-    padding:10px 15px;border:1px solid var(--wood);
-    background:var(--wood);color:var(--paper);white-space:nowrap;
+    padding:10px 15px;border:1px solid var(--wood-dark);
+    background:var(--wood-dark);color:#fff;white-space:nowrap;
   }
-  .btn:hover{background:var(--wood-dark);}
+  .btn:hover{background:var(--ink);border-color:var(--ink);}
   .btn.olive{background:var(--olive);border-color:var(--olive-deep);}
   .btn.olive:hover{background:var(--olive-deep);}
-  .btn.ghost{background:transparent;color:var(--wood);}
-  .btn.ghost:hover{background:rgba(122,78,43,.1);}
+  .btn.ghost{background:transparent;color:var(--wood-dark);border-color:var(--wood-dark);}
+  .btn.ghost:hover{background:rgba(42,122,172,.12);}
   .btn.danger{background:transparent;border-color:var(--rust);color:var(--rust);}
   .btn.danger:hover{background:var(--rust);color:#fff;}
   .owner-only{display:none;}
@@ -216,33 +216,26 @@
 <header class="masthead">
   <div class="masthead-inner">
     <div class="tie">
-      <!-- little necktie: repp stripe -->
-      <svg width="34" height="54" viewBox="0 0 34 54" aria-hidden="true">
-        <defs>
-          <clipPath id="tieBody"><path d="M13 16 L21 16 L24 38 L17 52 L10 38 Z"/></clipPath>
-        </defs>
-        <path d="M13 16 L21 16 L24 38 L17 52 L10 38 Z" fill="#9C552B"/>
-        <g clip-path="url(#tieBody)">
-          <line x1="4" y1="4" x2="-16" y2="54" stroke="#D9A862" stroke-width="3"/>
-          <line x1="8" y1="4" x2="-12" y2="54" stroke="#7E8B3D" stroke-width="3"/>
-          <line x1="12" y1="4" x2="-8" y2="54" stroke="#D9A862" stroke-width="3"/>
-          <line x1="16" y1="4" x2="-4" y2="54" stroke="#7E8B3D" stroke-width="3"/>
-          <line x1="20" y1="4" x2="0" y2="54" stroke="#D9A862" stroke-width="3"/>
-          <line x1="24" y1="4" x2="4" y2="54" stroke="#7E8B3D" stroke-width="3"/>
-          <line x1="28" y1="4" x2="8" y2="54" stroke="#D9A862" stroke-width="3"/>
-          <line x1="32" y1="4" x2="12" y2="54" stroke="#7E8B3D" stroke-width="3"/>
-          <line x1="36" y1="4" x2="16" y2="54" stroke="#D9A862" stroke-width="3"/>
-          <line x1="40" y1="4" x2="20" y2="54" stroke="#7E8B3D" stroke-width="3"/>
-        </g>
-        <path d="M13 16 L21 16 L24 38 L17 52 L10 38 Z" fill="none" stroke="#5e3318" stroke-width="0.7"/>
-        <path d="M17 2 L25 9 L21 16 L13 16 L9 9 Z" fill="#9C552B"/>
-        <path d="M17 2 L25 9 L21 16 L13 16 L9 9 Z" fill="rgba(40,28,16,0.18)"/>
-        <path d="M17 2 L25 9 L21 16 L13 16 L9 9 Z" fill="none" stroke="#5e3318" stroke-width="0.7"/>
+      <!-- minimalist color-block dog emblem -->
+      <svg width="56" height="56" viewBox="0 0 100 100" aria-label="Russell Readery dog logo" role="img">
+        <circle cx="50" cy="50" r="47" fill="#F4EEDF" stroke="#D33B2C" stroke-width="3.5"/>
+        <path d="M32 41 Q31 30 50 29 Q69 30 68 41 Q73 49 71 59 Q68 71 58 77 Q50 82 42 77 Q32 71 29 59 Q27 49 32 41 Z" fill="#C89A66"/>
+        <path d="M43 33 Q33 27 28 32 Q24 40 27 49 Q33 51 38 45 Q43 40 44 34 Z" fill="#A87B49"/>
+        <path d="M57 33 Q67 27 72 32 Q76 40 73 49 Q67 51 62 45 Q57 40 56 34 Z" fill="#A87B49"/>
+        <path d="M41 34 Q34 31 31 35 Q29 41 31 47 Q35 47 38 42 Q41 38 41 34 Z" fill="#C89A66"/>
+        <path d="M59 34 Q66 31 69 35 Q71 41 69 47 Q65 47 62 42 Q59 38 59 34 Z" fill="#C89A66"/>
+        <path d="M48 34 Q50 32.5 52 34 L51.5 52 Q61 54 61 65 Q59 75 50 79 Q41 75 39 65 Q39 54 48.5 52 Z" fill="#EFE3CB"/>
+        <ellipse cx="41" cy="51" rx="4.1" ry="4.9" fill="#2E2620"/>
+        <ellipse cx="59" cy="51" rx="4.1" ry="4.9" fill="#2E2620"/>
+        <circle cx="42.6" cy="49.3" r="1.1" fill="#FBF7EC"/>
+        <circle cx="60.6" cy="49.3" r="1.1" fill="#FBF7EC"/>
+        <path d="M44.5 60 Q50 56.5 55.5 60 Q54 65.5 50 66.6 Q46 65.5 44.5 60 Z" fill="#2E2620"/>
+        <path d="M50 66.6 L50 71 Q50 75 44.5 75 M50 71 Q50 75 55.5 75" fill="none" stroke="#2E2620" stroke-width="1.6" stroke-linecap="round"/>
       </svg>
     </div>
     <div class="brand">
-      <h1>Macko's Suit and Tiebrary</h1>
-      <div class="sub">A lending library &middot; est. MMXXVI</div>
+      <h1>Russell Readery</h1>
+      <div class="sub">Jib &amp; Griz Have Books for You</div>
     </div>
     <button class="owner-btn" id="ownerBtn" title="Owner tools">Owner</button>
   </div>
