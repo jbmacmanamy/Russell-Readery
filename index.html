@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Macko's Suit and Tiebrary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ============================================================
+     CONFIG NOTE: To connect the shared database, edit the
+     CONFIG block in the <script> at the bottom of this file.
+     ============================================================ */
+
+  :root{
+    --cream:#F1E7D2;
+    --paper:#FBF5E7;
+    --paper-edge:#EFE4CB;
+    --wood:#A67C55;
+    --wood-dark:#6E4C33;
+    --ink:#2C2017;
+    --ink-soft:#5A4A39;
+    --olive:#6E7A33;
+    --olive-deep:#525C24;
+    --tan:#C08A4E;
+    --rust:#9C552B;
+    --muted:#917f64;
+    --line:#D8C9A8;
+    --shadow:rgba(60,40,20,.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"EB Garamond",Georgia,serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(110,122,51,.12), transparent 60%),
+      var(--cream);
+    color:var(--ink);
+    font-size:18px;
+    line-height:1.5;
+    min-height:100vh;
+  }
+  a{color:var(--rust);}
+
+  /* ---------- Masthead ---------- */
+  header.masthead{
+    background:linear-gradient(180deg,var(--wood),var(--wood-dark));
+    color:var(--paper);
+    border-bottom:5px solid var(--olive-deep);
+    box-shadow:0 4px 14px var(--shadow);
+  }
+  .masthead-inner{
+    max-width:1100px;margin:0 auto;padding:26px 22px 22px;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  }
+  .tie{flex:0 0 auto;}
+  .brand h1{
+    font-family:"DM Serif Display",serif;
+    font-weight:400;margin:0;line-height:1;
+    font-size:clamp(28px,4.5vw,46px);
+    letter-spacing:.5px;
+  }
+  .brand .sub{
+    font-family:"Courier Prime",monospace;
+    text-transform:uppercase;letter-spacing:3px;
+    font-size:12px;color:#E9D9B6;margin-top:6px;
+  }
+  .brand{flex:1 1 auto;min-width:220px;}
+  .owner-btn{
+    font-family:"Courier Prime",monospace;font-size:12px;letter-spacing:1px;
+    text-transform:uppercase;cursor:pointer;
+    background:rgba(255,255,255,.08);color:var(--paper);
+    border:1px solid rgba(255,255,255,.35);border-radius:4px;
+    padding:9px 14px;white-space:nowrap;
+  }
+  .owner-btn:hover{background:rgba(255,255,255,.18);}
+  .owner-btn.on{background:var(--olive);border-color:var(--olive);color:#fff;}
+
+  /* ---------- Layout ---------- */
+  main{max-width:1100px;margin:0 auto;padding:22px;}
+
+  .banner{
+    border-radius:8px;padding:14px 18px;margin-bottom:18px;
+    font-size:15px;border:1px solid;
+  }
+  .banner.warn{background:#FBEFD6;border-color:#E2C079;color:#6b4f1e;}
+  .banner.info{background:#EEF0DC;border-color:#C2C98C;color:#4b5421;}
+  .banner code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-family:"Courier Prime",monospace;}
+
+  /* ---------- Stats ---------- */
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+  .stat{
+    flex:1 1 140px;background:var(--paper);border:1px solid var(--line);
+    border-radius:8px;padding:14px 16px;box-shadow:0 2px 6px var(--shadow);
+  }
+  .stat .n{font-family:"DM Serif Display",serif;font-size:30px;line-height:1;color:var(--wood-dark);}
+  .stat .l{font-family:"Courier Prime",monospace;text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-top:6px;}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    background:var(--paper);border:1px solid var(--line);border-radius:8px;
+    padding:12px;margin-bottom:18px;box-shadow:0 2px 6px var(--shadow);
+  }
+  .toolbar input[type=text], .toolbar select{
+    font-family:"EB Garamond",serif;font-size:16px;
+    padding:9px 12px;border:1px solid var(--line);border-radius:6px;
+    background:#fff;color:var(--ink);
+  }
+  .toolbar input[type=text]{flex:1 1 240px;min-width:180px;}
+  .grow{flex:1 1 auto;}
+  .btn{
+    font-family:"Courier Prime",monospace;font-size:12px;letter-spacing:1px;
+    text-transform:uppercase;cursor:pointer;border-radius:6px;
+    padding:10px 15px;border:1px solid var(--wood);
+    background:var(--wood);color:var(--paper);white-space:nowrap;
+  }
+  .btn:hover{background:var(--wood-dark);}
+  .btn.olive{background:var(--olive);border-color:var(--olive-deep);}
+  .btn.olive:hover{background:var(--olive-deep);}
+  .btn.ghost{background:transparent;color:var(--wood);}
+  .btn.ghost:hover{background:rgba(122,78,43,.1);}
+  .btn.danger{background:transparent;border-color:var(--rust);color:var(--rust);}
+  .btn.danger:hover{background:var(--rust);color:#fff;}
+  .owner-only{display:none;}
+  body.owner .owner-only{display:inline-flex;}
+
+  /* ---------- Card grid (library cards) ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+  .card{
+    background:
+      repeating-linear-gradient(transparent,transparent 31px,rgba(150,120,70,.13) 32px),
+      var(--paper);
+    border:1px solid var(--paper-edge);border-radius:7px;
+    box-shadow:0 3px 9px var(--shadow);
+    padding:0;overflow:hidden;display:flex;flex-direction:column;
+    position:relative;
+  }
+  .card .hdr{
+    background:var(--olive);color:#fff;padding:7px 14px;
+    font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:2px;
+    text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;
+  }
+  .card .hdr.out{background:var(--rust);}
+  .card .body{padding:14px 16px 4px;flex:1 1 auto;}
+  .card h3{
+    font-family:"DM Serif Display",serif;font-weight:400;
+    margin:0 0 2px;font-size:22px;line-height:1.15;color:var(--wood-dark);
+  }
+  .card .author{font-style:italic;color:var(--ink-soft);margin-bottom:10px;}
+  .meta{font-family:"Courier Prime",monospace;font-size:11px;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+  .meta span{margin-right:12px;}
+  .notes{font-size:15px;color:var(--ink-soft);margin:6px 0 4px;}
+  .checkout-line{
+    font-size:14px;color:var(--rust);margin-top:8px;
+    border-top:1px dashed var(--line);padding-top:8px;
+  }
+  .checkout-line b{color:var(--wood-dark);}
+  .card .foot{
+    padding:10px 14px 14px;display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .stamp{
+    font-family:"Courier Prime",monospace;font-weight:700;letter-spacing:1px;
+    font-size:10px;text-transform:uppercase;
+  }
+  .empty{
+    text-align:center;color:var(--muted);padding:60px 20px;
+    font-style:italic;font-size:18px;
+  }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(44,32,23,.55);
+    display:none;align-items:flex-start;justify-content:center;
+    padding:40px 16px;overflow:auto;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--paper);border-radius:10px;max-width:520px;width:100%;
+    border-top:6px solid var(--olive);box-shadow:0 18px 50px rgba(0,0,0,.35);
+    padding:24px;
+  }
+  .modal h2{font-family:"DM Serif Display",serif;font-weight:400;margin:0 0 4px;font-size:28px;color:var(--wood-dark);}
+  .modal p.hint{color:var(--muted);font-size:14px;margin:0 0 16px;}
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;font-family:"Courier Prime",monospace;font-size:11px;
+    letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;
+  }
+  .field input,.field textarea,.field select{
+    width:100%;font-family:"EB Garamond",serif;font-size:16px;
+    padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);
+  }
+  .field textarea{min-height:70px;resize:vertical;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+  .csv-help{font-size:13px;color:var(--ink-soft);background:#fff;border:1px dashed var(--line);border-radius:6px;padding:10px 12px;margin-bottom:12px;}
+  .csv-help code{font-family:"Courier Prime",monospace;}
+
+  footer{
+    text-align:center;color:var(--muted);font-size:13px;
+    padding:30px 20px 50px;font-family:"Courier Prime",monospace;letter-spacing:1px;
+  }
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);
+    background:var(--wood-dark);color:var(--paper);padding:12px 22px;border-radius:30px;
+    font-family:"Courier Prime",monospace;font-size:13px;letter-spacing:1px;
+    box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;transition:.3s;z-index:80;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="tie">
+      <!-- little necktie: repp stripe -->
+      <svg width="34" height="54" viewBox="0 0 34 54" aria-hidden="true">
+        <defs>
+          <clipPath id="tieBody"><path d="M13 16 L21 16 L24 38 L17 52 L10 38 Z"/></clipPath>
+        </defs>
+        <path d="M13 16 L21 16 L24 38 L17 52 L10 38 Z" fill="#9C552B"/>
+        <g clip-path="url(#tieBody)">
+          <line x1="4" y1="4" x2="-16" y2="54" stroke="#D9A862" stroke-width="3"/>
+          <line x1="8" y1="4" x2="-12" y2="54" stroke="#7E8B3D" stroke-width="3"/>
+          <line x1="12" y1="4" x2="-8" y2="54" stroke="#D9A862" stroke-width="3"/>
+          <line x1="16" y1="4" x2="-4" y2="54" stroke="#7E8B3D" stroke-width="3"/>
+          <line x1="20" y1="4" x2="0" y2="54" stroke="#D9A862" stroke-width="3"/>
+          <line x1="24" y1="4" x2="4" y2="54" stroke="#7E8B3D" stroke-width="3"/>
+          <line x1="28" y1="4" x2="8" y2="54" stroke="#D9A862" stroke-width="3"/>
+          <line x1="32" y1="4" x2="12" y2="54" stroke="#7E8B3D" stroke-width="3"/>
+          <line x1="36" y1="4" x2="16" y2="54" stroke="#D9A862" stroke-width="3"/>
+          <line x1="40" y1="4" x2="20" y2="54" stroke="#7E8B3D" stroke-width="3"/>
+        </g>
+        <path d="M13 16 L21 16 L24 38 L17 52 L10 38 Z" fill="none" stroke="#5e3318" stroke-width="0.7"/>
+        <path d="M17 2 L25 9 L21 16 L13 16 L9 9 Z" fill="#9C552B"/>
+        <path d="M17 2 L25 9 L21 16 L13 16 L9 9 Z" fill="rgba(40,28,16,0.18)"/>
+        <path d="M17 2 L25 9 L21 16 L13 16 L9 9 Z" fill="none" stroke="#5e3318" stroke-width="0.7"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <h1>Macko's Suit and Tiebrary</h1>
+      <div class="sub">A lending library &middot; est. MMXXVI</div>
+    </div>
+    <button class="owner-btn" id="ownerBtn" title="Owner tools">Owner</button>
+  </div>
+</header>
+
+<main>
+  <div id="banner"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Volumes</div></div>
+    <div class="stat"><div class="n" id="statAvail">0</div><div class="l">On the shelf</div></div>
+    <div class="stat"><div class="n" id="statOut">0</div><div class="l">Checked out</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search title or author..." />
+    <select id="statusFilter">
+      <option value="all">All books</option>
+      <option value="available">Available only</option>
+      <option value="out">Checked out only</option>
+    </select>
+    <select id="genreFilter"><option value="">All genres</option></select>
+    <select id="sortBy">
+      <option value="title">Sort: Title</option>
+      <option value="author">Sort: Author</option>
+      <option value="recent">Sort: Recently added</option>
+    </select>
+    <span class="grow"></span>
+    <button class="btn olive owner-only" id="addBtn">+ Add book</button>
+    <button class="btn ghost owner-only" id="importBtn">Import CSV</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="emptyState" style="display:none;">No books match your search yet.</div>
+</main>
+
+<footer>
+  Share the link to this page with friends so they can browse &amp; borrow.
+</footer>
+
+<!-- ===== Add / Edit book modal ===== -->
+<div class="overlay" id="bookOverlay">
+  <div class="modal">
+    <h2 id="bookModalTitle">Add a book</h2>
+    <p class="hint">Add a volume to the collection.</p>
+    <div class="field"><label>Title *</label><input id="f_title" type="text" /></div>
+    <div class="field"><label>Author</label><input id="f_author" type="text" /></div>
+    <div class="field"><label>Genre</label><input id="f_genre" type="text" placeholder="e.g. Fiction, Design, History" /></div>
+    <div class="field"><label>Year</label><input id="f_year" type="text" inputmode="numeric" placeholder="e.g. 1971" /></div>
+    <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="Edition, condition, anything fun..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn olive" id="saveBookBtn">Save book</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Checkout modal ===== -->
+<div class="overlay" id="checkoutOverlay">
+  <div class="modal">
+    <h2>Check out</h2>
+    <p class="hint" id="checkoutBookName"></p>
+    <div class="field"><label>Borrower name *</label><input id="c_name" type="text" placeholder="Who's taking it home?" /></div>
+    <div class="field"><label>Due back (optional)</label><input id="c_due" type="date" /></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn" id="confirmCheckoutBtn">Stamp it out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CSV import modal ===== -->
+<div class="overlay" id="csvOverlay">
+  <div class="modal">
+    <h2>Import from CSV</h2>
+    <div class="csv-help">
+      First row must be a header. Recognized columns:
+      <code>title, author, genre, year, notes</code>. Only <code>title</code> is required.
+    </div>
+    <div class="field"><label>Choose .csv file</label><input id="csvFile" type="file" accept=".csv,text/csv" /></div>
+    <div class="field"><label>...or paste CSV here</label><textarea id="csvPaste" placeholder="title,author,genre,year,notes&#10;The Phantom Tollbooth,Norton Juster,Fiction,1961,First edition"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn olive" id="confirmImportBtn">Import books</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ====================  CONFIG  ==============================
+   Paste your Supabase project values here (see SETUP.md).
+   Until you do, the app runs in local PREVIEW mode so you can
+   see how it looks — preview data is NOT shared with friends.
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL:  "https://vkxcebbajqthqlvodjdm.supabase.co/rest/v1/",        // e.g. https://abcd1234.supabase.co
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZreGNlYmJhanF0aHFsdm9kamRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mzg3NjYsImV4cCI6MjA5NzExNDc2Nn0.p8Fgsp7MgE4w_tdAVQTqsffvx-alb7e92meJ9U1xVvQ",
+  OWNER_PASSPHRASE: "aamacko"   // change this — gates the Add/Import/Delete tools
+};
+/* ============================================================ */
+
+const isConfigured =
+  CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes("YOUR_") &&
+  CONFIG.SUPABASE_ANON_KEY && !CONFIG.SUPABASE_ANON_KEY.includes("YOUR_");
+
+let sb = null;
+if (isConfigured) {
+  sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+}
+
+/* ---- Local preview store (used only when not configured) ---- */
+const PREVIEW_KEY = "tiebrary_preview_v1";
+function previewSeed(){
+  return {
+    books:[
+      {id:"p1",title:"The Death and Life of Great American Cities",author:"Jane Jacobs",genre:"Urbanism",year:1961,notes:"Dog-eared but beloved.",created_at:"2026-01-02"},
+      {id:"p2",title:"A Pattern Language",author:"Christopher Alexander",genre:"Design",year:1977,notes:"",created_at:"2026-01-05"},
+      {id:"p3",title:"The Phantom Tollbooth",author:"Norton Juster",genre:"Fiction",year:1961,notes:"First edition, signed.",created_at:"2026-02-01"},
+      {id:"p4",title:"Eames: Beautiful Details",author:"Demetrios & Eames",genre:"Design",year:2012,notes:"Coffee-table size.",created_at:"2026-02-10"},
+      {id:"p5",title:"Einstein: His Life and Universe",author:"Walter Isaacson",genre:"Biography",year:2007,notes:"",created_at:"2026-03-01"}
+    ],
+    checkouts:[
+      {id:"c1",book_id:"p3",borrower:"Dottie",checked_out_at:"2026-05-20",due_date:"2026-06-20",returned_at:null}
+    ]
+  };
+}
+function previewLoad(){
+  try{ const r=localStorage.getItem(PREVIEW_KEY); if(r) return JSON.parse(r); }catch(e){}
+  const s=previewSeed(); previewSave(s); return s;
+}
+function previewSave(s){ try{ localStorage.setItem(PREVIEW_KEY, JSON.stringify(s)); }catch(e){} }
+
+/* ---------------- Data layer ---------------- */
+let BOOKS = [];
+let ACTIVE = {}; // book_id -> checkout
+
+async function loadData(){
+  if (isConfigured){
+    const [{data:books,error:be},{data:cos,error:ce}] = await Promise.all([
+      sb.from("books").select("*").order("title"),
+      sb.from("checkouts").select("*").is("returned_at", null)
+    ]);
+    if (be || ce){ toast("Could not load library. Check setup."); console.error(be||ce); BOOKS=[]; ACTIVE={}; return; }
+    BOOKS = books || [];
+    ACTIVE = {};
+    (cos||[]).forEach(c=>{ ACTIVE[c.book_id]=c; });
+  } else {
+    const s = previewLoad();
+    BOOKS = s.books.slice().sort((a,b)=>(a.title||"").localeCompare(b.title||""));
+    ACTIVE = {};
+    s.checkouts.filter(c=>!c.returned_at).forEach(c=>{ ACTIVE[c.book_id]=c; });
+  }
+}
+
+async function addBook(b){
+  if (isConfigured){
+    const {error} = await sb.from("books").insert([b]);
+    if (error){ toast("Save failed."); console.error(error); return false; }
+  } else {
+    const s=previewLoad(); s.books.push(Object.assign({id:"p"+Date.now(),created_at:new Date().toISOString()},b)); previewSave(s);
+  }
+  return true;
+}
+
+async function addBooksBulk(arr){
+  if(!arr.length) return 0;
+  if (isConfigured){
+    const {error} = await sb.from("books").insert(arr);
+    if (error){ toast("Import failed."); console.error(error); return 0; }
+  } else {
+    const s=previewLoad();
+    arr.forEach((b,i)=> s.books.push(Object.assign({id:"p"+(Date.now()+i),created_at:new Date().toISOString()},b)));
+    previewSave(s);
+  }
+  return arr.length;
+}
+
+async function checkOut(bookId, borrower, due){
+  const row = {book_id:bookId, borrower:borrower, due_date:due||null};
+  if (isConfigured){
+    const {error} = await sb.from("checkouts").insert([row]);
+    if (error){ toast("Checkout failed."); console.error(error); return false; }
+  } else {
+    const s=previewLoad();
+    s.checkouts.push(Object.assign({id:"c"+Date.now(),checked_out_at:new Date().toISOString(),returned_at:null},row));
+    previewSave(s);
+  }
+  return true;
+}
+
+async function checkIn(bookId){
+  if (isConfigured){
+    const co = ACTIVE[bookId];
+    if(!co) return false;
+    const {error} = await sb.from("checkouts").update({returned_at:new Date().toISOString()}).eq("id", co.id);
+    if (error){ toast("Check-in failed."); console.error(error); return false; }
+  } else {
+    const s=previewLoad();
+    const co = s.checkouts.find(c=>c.book_id===bookId && !c.returned_at);
+    if(co) co.returned_at=new Date().toISOString();
+    previewSave(s);
+  }
+  return true;
+}
+
+async function deleteBook(bookId){
+  if (isConfigured){
+    await sb.from("checkouts").delete().eq("book_id", bookId);
+    const {error} = await sb.from("books").delete().eq("id", bookId);
+    if (error){ toast("Delete failed."); console.error(error); return false; }
+  } else {
+    const s=previewLoad();
+    s.books = s.books.filter(b=>b.id!==bookId);
+    s.checkouts = s.checkouts.filter(c=>c.book_id!==bookId);
+    previewSave(s);
+  }
+  return true;
+}
+
+/* ---------------- Rendering ---------------- */
+const $ = id => document.getElementById(id);
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+function fmtDate(d){ if(!d) return ""; const dt=new Date(d); if(isNaN(dt)) return esc(d); return dt.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}); }
+
+function refreshGenreFilter(){
+  const sel=$("genreFilter"); const cur=sel.value;
+  const genres=[...new Set(BOOKS.map(b=>b.genre).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">All genres</option>'+genres.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");
+  if(genres.includes(cur)) sel.value=cur;
+}
+
+function render(){
+  const q=$("search").value.trim().toLowerCase();
+  const sf=$("statusFilter").value;
+  const gf=$("genreFilter").value;
+  const sort=$("sortBy").value;
+
+  let list = BOOKS.filter(b=>{
+    const out = !!ACTIVE[b.id];
+    if(sf==="available" && out) return false;
+    if(sf==="out" && !out) return false;
+    if(gf && b.genre!==gf) return false;
+    if(q){
+      const hay=((b.title||"")+" "+(b.author||"")).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  list.sort((a,b)=>{
+    if(sort==="author") return (a.author||"").localeCompare(b.author||"")||(a.title||"").localeCompare(b.title||"");
+    if(sort==="recent") return String(b.created_at||"").localeCompare(String(a.created_at||""));
+    return (a.title||"").localeCompare(b.title||"");
+  });
+
+  const total=BOOKS.length, out=Object.keys(ACTIVE).filter(id=>BOOKS.some(b=>b.id===id)).length;
+  $("statTotal").textContent=total;
+  $("statOut").textContent=out;
+  $("statAvail").textContent=total-out;
+
+  const grid=$("grid");
+  grid.innerHTML = list.map(b=>{
+    const co=ACTIVE[b.id];
+    const out=!!co;
+    const metaBits=[];
+    if(b.genre) metaBits.push(`<span>${esc(b.genre)}</span>`);
+    if(b.year) metaBits.push(`<span>${esc(b.year)}</span>`);
+    return `<div class="card">
+      <div class="hdr ${out?'out':''}">
+        <span>${out?'&#9632; Checked out':'&#9633; Available'}</span>
+        <span class="stamp">${out?'OUT':'IN'}</span>
+      </div>
+      <div class="body">
+        <h3>${esc(b.title)}</h3>
+        <div class="author">${b.author?('by '+esc(b.author)):'<span style="color:var(--muted)">Unknown author</span>'}</div>
+        ${metaBits.length?`<div class="meta">${metaBits.join("")}</div>`:""}
+        ${b.notes?`<div class="notes">${esc(b.notes)}</div>`:""}
+        ${out?`<div class="checkout-line">Out with <b>${esc(co.borrower)}</b> since ${fmtDate(co.checked_out_at)}${co.due_date?` &middot; due ${fmtDate(co.due_date)}`:""}</div>`:""}
+      </div>
+      <div class="foot">
+        ${out
+          ? `<button class="btn olive" data-checkin="${esc(b.id)}">Check back in</button>`
+          : `<button class="btn" data-checkout="${esc(b.id)}">Check out</button>`}
+        <button class="btn danger owner-only" data-delete="${esc(b.id)}">Remove</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  $("emptyState").style.display = list.length?"none":"block";
+}
+
+/* ---------------- Modals ---------------- */
+function openOverlay(id){ $(id).classList.add("show"); }
+function closeOverlay(el){ el.classList.remove("show"); }
+document.querySelectorAll(".overlay").forEach(ov=>{
+  ov.addEventListener("click",e=>{ if(e.target===ov) closeOverlay(ov); });
+  ov.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeOverlay(ov)));
+});
+
+/* Add book */
+$("addBtn").addEventListener("click",()=>{
+  ["f_title","f_author","f_genre","f_year","f_notes"].forEach(i=>$(i).value="");
+  openOverlay("bookOverlay");
+  setTimeout(()=>$("f_title").focus(),50);
+});
+$("saveBookBtn").addEventListener("click",async()=>{
+  const title=$("f_title").value.trim();
+  if(!title){ toast("A title is required."); return; }
+  const yr=parseInt($("f_year").value,10);
+  const ok=await addBook({
+    title, author:$("f_author").value.trim()||null,
+    genre:$("f_genre").value.trim()||null,
+    year:isNaN(yr)?null:yr,
+    notes:$("f_notes").value.trim()||null
+  });
+  if(ok){ closeOverlay($("bookOverlay")); await loadData(); refreshGenreFilter(); render(); toast("Book added to the shelf."); }
+});
+
+/* Checkout */
+let checkoutTarget=null;
+function startCheckout(id){
+  checkoutTarget=id;
+  const b=BOOKS.find(x=>x.id===id);
+  $("checkoutBookName").textContent=b?`"${b.title}"${b.author?' by '+b.author:''}`:"";
+  $("c_name").value=""; $("c_due").value="";
+  openOverlay("checkoutOverlay");
+  setTimeout(()=>$("c_name").focus(),50);
+}
+$("confirmCheckoutBtn").addEventListener("click",async()=>{
+  const name=$("c_name").value.trim();
+  if(!name){ toast("Who's borrowing it?"); return; }
+  const ok=await checkOut(checkoutTarget,name,$("c_due").value||null);
+  if(ok){ closeOverlay($("checkoutOverlay")); await loadData(); render(); toast("Stamped out. Happy reading!"); }
+});
+
+/* CSV import */
+$("importBtn").addEventListener("click",()=>{ $("csvFile").value=""; $("csvPaste").value=""; openOverlay("csvOverlay"); });
+$("confirmImportBtn").addEventListener("click",async()=>{
+  const file=$("csvFile").files[0];
+  const finish=async(text)=>{
+    const rows=parseCSV(text);
+    if(!rows.length){ toast("No rows found in CSV."); return; }
+    const books=rowsToBooks(rows);
+    if(!books.length){ toast("No valid rows (need a title)."); return; }
+    const n=await addBooksBulk(books);
+    if(n){ closeOverlay($("csvOverlay")); await loadData(); refreshGenreFilter(); render(); toast(`Imported ${n} book${n>1?'s':''}.`); }
+  };
+  if(file){ const r=new FileReader(); r.onload=()=>finish(r.result); r.readAsText(file); }
+  else { finish($("csvPaste").value); }
+});
+
+function parseCSV(text){
+  text=(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").trim();
+  if(!text) return [];
+  const rows=[]; let row=[]; let cur=""; let inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inQ=false; }
+      else cur+=ch;
+    } else {
+      if(ch==='"') inQ=true;
+      else if(ch===','){ row.push(cur); cur=""; }
+      else if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=""; }
+      else cur+=ch;
+    }
+  }
+  row.push(cur); rows.push(row);
+  return rows.filter(r=>r.some(c=>c.trim()!==""));
+}
+function rowsToBooks(rows){
+  const header=rows[0].map(h=>h.trim().toLowerCase());
+  const idx=name=>header.indexOf(name);
+  const ti=idx("title"),ai=idx("author"),gi=idx("genre"),yi=idx("year"),ni=idx("notes");
+  const out=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    const title=(ti>=0?r[ti]:r[0]||"").trim();
+    if(!title) continue;
+    const yr=yi>=0?parseInt((r[yi]||"").trim(),10):NaN;
+    out.push({
+      title,
+      author:ai>=0?((r[ai]||"").trim()||null):null,
+      genre:gi>=0?((r[gi]||"").trim()||null):null,
+      year:isNaN(yr)?null:yr,
+      notes:ni>=0?((r[ni]||"").trim()||null):null
+    });
+  }
+  return out;
+}
+
+/* Grid actions (delegated) */
+$("grid").addEventListener("click",async e=>{
+  const co=e.target.closest("[data-checkout]");
+  const ci=e.target.closest("[data-checkin]");
+  const dl=e.target.closest("[data-delete]");
+  if(co){ startCheckout(co.getAttribute("data-checkout")); }
+  else if(ci){
+    if(await checkIn(ci.getAttribute("data-checkin"))){ await loadData(); render(); toast("Welcome home, book."); }
+  }
+  else if(dl){
+    const id=dl.getAttribute("data-delete");
+    const b=BOOKS.find(x=>x.id===id);
+    if(confirm(`Remove "${b?b.title:'this book'}" from the library?`)){
+      if(await deleteBook(id)){ await loadData(); refreshGenreFilter(); render(); toast("Removed."); }
+    }
+  }
+});
+
+/* Owner mode */
+const ownerBtn=$("ownerBtn");
+function setOwner(on){
+  document.body.classList.toggle("owner",on);
+  ownerBtn.classList.toggle("on",on);
+  ownerBtn.textContent= on?"Owner: on":"Owner";
+}
+ownerBtn.addEventListener("click",()=>{
+  if(document.body.classList.contains("owner")){ setOwner(false); return; }
+  const p=prompt("Owner passphrase:");
+  if(p===null) return;
+  if(p===CONFIG.OWNER_PASSPHRASE){ setOwner(true); toast("Owner tools unlocked."); }
+  else toast("Wrong passphrase.");
+});
+
+/* Filters */
+["search","statusFilter","genreFilter","sortBy"].forEach(id=>{
+  $(id).addEventListener("input",render);
+  $(id).addEventListener("change",render);
+});
+
+/* Toast */
+let toastTimer=null;
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+/* Banner */
+function showBanner(){
+  const el=$("banner");
+  if(!isConfigured){
+    el.innerHTML=`<div class="banner warn"><b>Preview mode.</b> This is sample data on your device only — friends won't see it.
+      To go live & shared, open <code>SETUP.md</code> and paste your Supabase keys into the <code>CONFIG</code> block of this file.</div>`;
+  } else {
+    el.innerHTML="";
+  }
+}
+
+/* Init */
+(async function init(){
+  showBanner();
+  await loadData();
+  refreshGenreFilter();
+  render();
+})();
+</script>
+</body>
+</html>
