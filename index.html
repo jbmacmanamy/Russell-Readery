@@ -173,6 +173,22 @@
   /* ---------- Card hover + overdue ---------- */
   .card{transition:transform .14s ease, box-shadow .14s ease;}
   .card:hover{transform:translateY(-3px);box-shadow:0 8px 20px var(--shadow);}
+
+  /* ---------- Ex Libris stamp (checked-out cards) ---------- */
+  --stamp-ink:#3a57a8;
+  .exlibris{
+    position:absolute;top:40px;right:12px;width:74px;height:auto;
+    transform:rotate(-7deg);opacity:.82;pointer-events:none;z-index:2;
+    color:var(--stamp-ink);
+    /* faint rubber-stamp unevenness */
+    filter:saturate(1.05) contrast(1.05);
+    mix-blend-mode:multiply;
+  }
+  .exlibris text{
+    font-family:"DM Serif Display",Georgia,serif;
+    fill:var(--stamp-ink);letter-spacing:1px;
+  }
+  .card:has(.exlibris) .body{padding-right:80px;}
   .card .hdr.overdue{background:#9B1B0E;}
   .checkout-line.overdue{color:#9B1B0E;}
   .checkout-line.overdue b{color:#9B1B0E;}
@@ -561,6 +577,36 @@ function isOverdue(co){
   return due < today;
 }
 
+/* Ex Libris bookplate stamp — shown on checked-out cards */
+function exLibrisStamp(){
+  return `<svg class="exlibris" viewBox="0 0 120 152" role="img" aria-label="Ex Libris: The MacManamys">
+    <text x="60" y="17" text-anchor="middle" font-size="17">EX LIBRIS</text>
+    <rect x="11" y="25" width="98" height="98" fill="none" stroke="currentColor" stroke-width="4"/>
+    <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <!-- main limbs fanning up -->
+      <path d="M60 120 C58 104 56 92 50 80 C44 68 38 56 33 40"/>
+      <path d="M60 120 C62 104 64 92 70 80 C76 68 82 56 87 40"/>
+      <path d="M60 110 C60 90 60 70 60 36"/>
+      <path d="M58 100 C54 88 48 80 44 52"/>
+      <path d="M62 100 C66 88 72 80 76 52"/>
+      <!-- twigs -->
+      <g stroke-width="1.5">
+        <path d="M50 80 C46 74 42 70 39 60"/>
+        <path d="M70 80 C74 74 78 70 81 60"/>
+        <path d="M44 52 C41 47 38 45 35 38"/>
+        <path d="M76 52 C79 47 82 45 85 38"/>
+        <path d="M60 60 C57 54 53 50 50 44"/>
+        <path d="M60 60 C63 54 67 50 70 44"/>
+        <path d="M33 40 C31 36 30 34 29 30"/>
+        <path d="M87 40 C89 36 90 34 91 30"/>
+      </g>
+    </g>
+    <!-- trunk -->
+    <path d="M56 120 C57 106 58 96 58 86 L62 86 C62 96 63 106 64 120 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+    <text x="60" y="144" text-anchor="middle" font-size="13" letter-spacing="0">The MacManamys</text>
+  </svg>`;
+}
+
 function refreshGenreFilter(){
   const sel=$("genreFilter"); const cur=sel.value;
   const genres=[...new Set(BOOKS.map(b=>b.genre).filter(Boolean))].sort();
@@ -613,6 +659,7 @@ function render(){
     if(b.genre) metaBits.push(`<span>${esc(b.genre)}</span>`);
     if(b.year) metaBits.push(`<span>${esc(b.year)}</span>`);
     return `<div class="card">
+      ${out?exLibrisStamp():""}
       <div class="hdr ${over?'overdue':(out?'out':'')}">
         <span>${out?(over?'&#9632; Overdue':'&#9632; Checked out'):'&#9633; Available'}</span>
         <span class="stamp">${out?'OUT':'IN'}</span>
