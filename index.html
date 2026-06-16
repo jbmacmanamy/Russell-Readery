@@ -215,6 +215,37 @@
     text-transform:uppercase;color:var(--rust);margin-left:8px;
   }
   .card-empty{color:var(--muted);font-style:italic;font-size:15px;padding:6px 2px;}
+
+  /* ---------- ISBN lookup ---------- */
+  .isbn-row{display:flex;gap:8px;}
+  .isbn-row input{flex:1 1 auto;}
+  .isbn-row .btn{flex:0 0 auto;}
+
+  /* ---------- Reviews ---------- */
+  .stars{display:flex;align-items:center;gap:4px;font-size:26px;line-height:1;}
+  .stars .star{color:var(--line);cursor:pointer;transition:color .1s;}
+  .stars .star.on{color:#E0A33E;}
+  .stars .star:hover{color:#E0A33E;}
+  .clear-stars{
+    margin-left:10px;font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:1px;
+    text-transform:uppercase;background:none;border:none;color:var(--muted);cursor:pointer;
+  }
+  .clear-stars:hover{color:var(--rust);}
+  .reviews-list{max-height:320px;overflow:auto;}
+  .review{
+    border:1px solid var(--line);border-radius:7px;background:#fff;
+    padding:11px 13px;margin-bottom:9px;position:relative;
+  }
+  .review .rv-stars{color:#E0A33E;font-size:14px;letter-spacing:1px;}
+  .review .rv-body{font-size:16px;color:var(--ink);margin:4px 0 4px;white-space:pre-wrap;}
+  .review .rv-meta{font-family:"Courier Prime",monospace;font-size:11px;letter-spacing:.5px;color:var(--muted);}
+  .review .rv-del{
+    position:absolute;top:8px;right:10px;border:none;background:none;color:var(--muted);
+    cursor:pointer;font-size:16px;line-height:1;display:none;
+  }
+  body.owner .review .rv-del{display:block;}
+  .review .rv-del:hover{color:var(--rust);}
+  .reviews-empty{color:var(--muted);font-style:italic;padding:8px 2px;}
   .card .hdr.overdue{background:#9B1B0E;}
   .checkout-line.overdue{color:#9B1B0E;}
   .checkout-line.overdue b{color:#9B1B0E;}
@@ -385,6 +416,14 @@
   <div class="modal">
     <h2 id="bookModalTitle">Add a book</h2>
     <p class="hint" id="bookModalHint">Add a volume to the collection.</p>
+    <div class="field">
+      <label>ISBN (optional — auto-fills the fields below)</label>
+      <div class="isbn-row">
+        <input id="f_isbn" type="text" inputmode="numeric" placeholder="e.g. 9780451524935" autocomplete="off" />
+        <button class="btn ghost" id="isbnBtn" type="button">Look up</button>
+      </div>
+      <div class="card-status" id="isbnStatus"></div>
+    </div>
     <div class="field"><label>Title *</label><input id="f_title" type="text" /></div>
     <div class="field"><label>Author</label><input id="f_author" type="text" /></div>
     <div class="field"><label>Genre</label><input id="f_genre" type="text" placeholder="e.g. Fiction, Design, History" /></div>
@@ -429,6 +468,44 @@
     <div class="cards-list" id="cardsList"></div>
     <div class="modal-actions">
       <button class="btn ghost" data-close>Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Leave a review (shown on return) ===== -->
+<div class="overlay" id="reviewOverlay">
+  <div class="modal">
+    <h2>How was it?</h2>
+    <p class="hint" id="reviewBookName"></p>
+    <div class="field">
+      <label>Your rating (optional)</label>
+      <div class="stars" id="reviewStars" role="radiogroup" aria-label="Rating">
+        <span class="star" data-star="1">&#9733;</span>
+        <span class="star" data-star="2">&#9733;</span>
+        <span class="star" data-star="3">&#9733;</span>
+        <span class="star" data-star="4">&#9733;</span>
+        <span class="star" data-star="5">&#9733;</span>
+        <button type="button" class="clear-stars" id="clearStars">clear</button>
+      </div>
+    </div>
+    <div class="field"><label>Thoughts for the next reader (optional)</label>
+      <textarea id="r_body" placeholder="What did you think? Any warnings or favorite bits?"></textarea></div>
+    <div class="field"><label>Signed</label><input id="r_name" type="text" placeholder="Your name" /></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close>Skip</button>
+      <button class="btn olive" id="postReviewBtn">Post review</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Read reviews ===== -->
+<div class="overlay" id="reviewsListOverlay">
+  <div class="modal">
+    <h2 id="reviewsListTitle">Reviews</h2>
+    <p class="hint" id="reviewsListSub"></p>
+    <div class="reviews-list" id="reviewsList"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close>Close</button>
     </div>
   </div>
 </div>
@@ -500,6 +577,10 @@ function previewSeed(){
     members:[
       {id:"m1",name:"Dottie",card_number:"0421",created_at:"2026-01-01"},
       {id:"m2",name:"Sam Vimes",card_number:"1007",created_at:"2026-01-03"}
+    ],
+    reviews:[
+      {id:"v1",book_id:"p1",reviewer:"Dottie",rating:5,body:"Changed how I see every street corner. Couldn't put it down.",created_at:"2026-03-15"},
+      {id:"v2",book_id:"p1",reviewer:"Sam Vimes",rating:4,body:"Dense in places but worth it.",created_at:"2026-04-02"}
     ]
   };
 }
@@ -513,38 +594,67 @@ function previewSave(s){ try{ localStorage.setItem(PREVIEW_KEY, JSON.stringify(s
 let BOOKS = [];
 let ACTIVE = {}; // book_id -> checkout
 let MEMBERS = []; // library card holders
+let REVIEWS = []; // reader reviews
 
 async function loadData(){
   if (isConfigured){
-    if (!sb){ showLoadError({message: initError||"Supabase client not initialized."}); BOOKS=[]; ACTIVE={}; MEMBERS=[]; return; }
-    let books, cos, mem, be, ce, me;
+    if (!sb){ showLoadError({message: initError||"Supabase client not initialized."}); BOOKS=[]; ACTIVE={}; MEMBERS=[]; REVIEWS=[]; return; }
+    let books, cos, mem, rev, be, ce, me, re;
     try {
       const r = await Promise.all([
         sb.from("books").select("*").order("title"),
         sb.from("checkouts").select("*").is("returned_at", null),
-        sb.from("members").select("*").order("name")
+        sb.from("members").select("*").order("name"),
+        sb.from("reviews").select("*").order("created_at", {ascending:false})
       ]);
       books = r[0].data; be = r[0].error;
       cos   = r[1].data; ce = r[1].error;
       mem   = r[2].data; me = r[2].error;
+      rev   = r[3].data; re = r[3].error;
     } catch(netErr){
       showLoadError({message:"Network request failed — the browser couldn't reach Supabase. Usually a wrong SUPABASE_URL, an http:// URL on an https page, or a blocker. Details: "+(netErr&&netErr.message?netErr.message:netErr)});
-      BOOKS=[]; ACTIVE={}; MEMBERS=[]; return;
+      BOOKS=[]; ACTIVE={}; MEMBERS=[]; REVIEWS=[]; return;
     }
-    if (be || ce){ const e=be||ce; console.error(e); showLoadError(e); BOOKS=[]; ACTIVE={}; MEMBERS=[]; return; }
+    if (be || ce){ const e=be||ce; console.error(e); showLoadError(e); BOOKS=[]; ACTIVE={}; MEMBERS=[]; REVIEWS=[]; return; }
     BOOKS = books || [];
     ACTIVE = {};
     (cos||[]).forEach(c=>{ ACTIVE[c.book_id]=c; });
-    // members table may not exist yet on older setups — don't break the whole app
+    // members / reviews tables may not exist yet on older setups — don't break the whole app
     if (me){ console.warn("Could not load members (run the latest schema.sql?):", me); MEMBERS=[]; }
     else MEMBERS = mem || [];
+    if (re){ console.warn("Could not load reviews (run the latest schema.sql?):", re); REVIEWS=[]; }
+    else REVIEWS = rev || [];
   } else {
     const s = previewLoad();
     BOOKS = s.books.slice().sort((a,b)=>(a.title||"").localeCompare(b.title||""));
     ACTIVE = {};
     s.checkouts.filter(c=>!c.returned_at).forEach(c=>{ ACTIVE[c.book_id]=c; });
     MEMBERS = (s.members||[]).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+    REVIEWS = (s.reviews||[]).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
   }
+}
+
+/* Reviews helpers + data ops */
+function reviewsFor(bookId){ return REVIEWS.filter(r=>r.book_id===bookId); }
+async function addReview(rev){
+  if (isConfigured){
+    const {error} = await sb.from("reviews").insert([rev]);
+    if (error){ toast("Could not post review."); console.error(error); return false; }
+  } else {
+    const s=previewLoad(); s.reviews=s.reviews||[];
+    s.reviews.push(Object.assign({id:"v"+Date.now(),created_at:new Date().toISOString()},rev));
+    previewSave(s);
+  }
+  return true;
+}
+async function deleteReview(id){
+  if (isConfigured){
+    const {error} = await sb.from("reviews").delete().eq("id", id);
+    if (error){ toast("Could not remove review."); console.error(error); return false; }
+  } else {
+    const s=previewLoad(); s.reviews=(s.reviews||[]).filter(r=>r.id!==id); previewSave(s);
+  }
+  return true;
 }
 
 /* Card lookup — normalized, forgiving of spaces/case */
@@ -725,6 +835,7 @@ function render(){
     const co=ACTIVE[b.id];
     const out=!!co;
     const over=isOverdue(co);
+    const rc=reviewsFor(b.id).length;
     const metaBits=[];
     if(b.genre) metaBits.push(`<span>${esc(b.genre)}</span>`);
     if(b.year) metaBits.push(`<span>${esc(b.year)}</span>`);
@@ -745,6 +856,7 @@ function render(){
         ${out
           ? `<button class="btn olive" data-checkin="${esc(b.id)}">Check back in</button>`
           : `<button class="btn" data-checkout="${esc(b.id)}">Check out</button>`}
+        ${rc>0?`<button class="btn ghost" data-reviews="${esc(b.id)}">Reviews (${rc})</button>`:""}
         <button class="btn ghost owner-only" data-edit="${esc(b.id)}">Edit</button>
         <button class="btn danger owner-only" data-delete="${esc(b.id)}">Remove</button>
       </div>
@@ -772,17 +884,19 @@ document.querySelectorAll(".overlay").forEach(ov=>{
 let editingId=null;
 $("addBtn").addEventListener("click",()=>{
   editingId=null;
-  ["f_title","f_author","f_genre","f_year","f_notes"].forEach(i=>$(i).value="");
+  ["f_isbn","f_title","f_author","f_genre","f_year","f_notes"].forEach(i=>$(i).value="");
+  $("isbnStatus").textContent=""; $("isbnStatus").className="card-status";
   $("bookModalTitle").textContent="Add a book";
   $("bookModalHint").textContent="Add a volume to the collection.";
   $("saveBookBtn").textContent="Save book";
   openOverlay("bookOverlay");
-  setTimeout(()=>$("f_title").focus(),50);
+  setTimeout(()=>$("f_isbn").focus(),50);
 });
 function startEdit(id){
   const b=BOOKS.find(x=>x.id===id);
   if(!b) return;
   editingId=id;
+  $("f_isbn").value=""; $("isbnStatus").textContent=""; $("isbnStatus").className="card-status";
   $("f_title").value=b.title||"";
   $("f_author").value=b.author||"";
   $("f_genre").value=b.genre||"";
@@ -811,6 +925,56 @@ $("saveBookBtn").addEventListener("click",async()=>{
     toast(wasEdit?"Changes saved.":"Book added to the shelf.");
   }
 });
+
+/* Map Open Library subject tags onto the genres already in the library.
+   Prefers an exact (case-insensitive) match, then "subject contains genre",
+   then "genre contains subject". Returns the existing genre (original casing),
+   or null if nothing sensible matches — in which case we leave the field blank. */
+function existingGenres(){ return [...new Set(BOOKS.map(b=>b.genre).filter(Boolean))]; }
+function mapToExistingGenre(subjectNames){
+  const subs=(subjectNames||[]).map(s=>String(s||"").trim().toLowerCase()).filter(Boolean);
+  if(!subs.length) return null;
+  let best=null, bestScore=0;
+  for(const g of existingGenres()){
+    const gl=g.trim().toLowerCase(); if(!gl) continue;
+    let score=0;
+    for(const s of subs){
+      if(s===gl) score=Math.max(score,3);
+      else if(s.includes(gl)) score=Math.max(score,2);
+      else if(gl.includes(s)) score=Math.max(score,1);
+    }
+    if(score>bestScore){ bestScore=score; best=g; }
+  }
+  return best;
+}
+
+/* ISBN auto-fill via Open Library (free, no key, CORS-enabled) */
+async function lookupISBN(){
+  const isbn=$("f_isbn").value.trim().replace(/[^0-9Xx]/g,"");
+  const st=$("isbnStatus");
+  if(!isbn){ st.textContent="Enter an ISBN first."; st.className="card-status bad"; return; }
+  if(isbn.length!==10 && isbn.length!==13){ st.textContent="That doesn't look like a 10- or 13-digit ISBN."; st.className="card-status bad"; return; }
+  st.textContent="Looking it up…"; st.className="card-status";
+  try{
+    const res=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const rec=(await res.json())["ISBN:"+isbn];
+    if(!rec){ st.textContent="No match found for that ISBN — you can still fill it in by hand."; st.className="card-status bad"; return; }
+    if(rec.title) $("f_title").value=rec.title+(rec.subtitle?(": "+rec.subtitle):"");
+    if(rec.authors&&rec.authors.length) $("f_author").value=rec.authors.map(a=>a.name).filter(Boolean).join(", ");
+    const ym=(rec.publish_date||"").match(/\d{4}/); if(ym) $("f_year").value=ym[0];
+    if(rec.subjects&&rec.subjects.length && !$("f_genre").value){
+      const g=mapToExistingGenre(rec.subjects.map(s=>s.name)); if(g) $("f_genre").value=g;
+    }
+    st.textContent='✓ Found "'+(rec.title||"")+'". Edit anything, then Save.'; st.className="card-status ok";
+    setTimeout(()=>$("f_title").focus(),30);
+  }catch(e){
+    console.error(e);
+    st.textContent="Lookup failed — check your connection, or fill the fields in by hand."; st.className="card-status bad";
+  }
+}
+$("isbnBtn").addEventListener("click",lookupISBN);
+$("f_isbn").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); lookupISBN(); }});
 
 /* Checkout */
 let checkoutTarget=null;
@@ -944,16 +1108,84 @@ $("grid").addEventListener("click",async e=>{
   const ci=e.target.closest("[data-checkin]");
   const dl=e.target.closest("[data-delete]");
   const ed=e.target.closest("[data-edit]");
+  const rv=e.target.closest("[data-reviews]");
   if(ed){ startEdit(ed.getAttribute("data-edit")); return; }
+  if(rv){ openReviews(rv.getAttribute("data-reviews")); return; }
   if(co){ startCheckout(co.getAttribute("data-checkout")); }
   else if(ci){
-    if(await checkIn(ci.getAttribute("data-checkin"))){ await loadData(); render(); toast("Welcome home, book."); }
+    const id=ci.getAttribute("data-checkin");
+    const borrower=ACTIVE[id]?ACTIVE[id].borrower:"";
+    if(await checkIn(id)){ await loadData(); render(); toast("Welcome home, book."); promptReview(id, borrower); }
   }
   else if(dl){
     const id=dl.getAttribute("data-delete");
     const b=BOOKS.find(x=>x.id===id);
     if(confirm(`Remove "${b?b.title:'this book'}" from the library?`)){
       if(await deleteBook(id)){ await loadData(); refreshGenreFilter(); render(); toast("Removed."); }
+    }
+  }
+});
+
+/* Reviews — prompt on return, read via the card button */
+let reviewBookId=null, reviewRating=0, reviewsListBookId=null;
+function setStars(n){
+  reviewRating=n;
+  document.querySelectorAll("#reviewStars .star").forEach(s=>{
+    s.classList.toggle("on", parseInt(s.getAttribute("data-star"),10)<=n);
+  });
+}
+document.querySelectorAll("#reviewStars .star").forEach(s=>{
+  s.addEventListener("click",()=>setStars(parseInt(s.getAttribute("data-star"),10)));
+});
+$("clearStars").addEventListener("click",()=>setStars(0));
+function promptReview(bookId, borrower){
+  reviewBookId=bookId; setStars(0);
+  const b=BOOKS.find(x=>x.id===bookId);
+  $("reviewBookName").textContent=b?`How was "${b.title}"${b.author?' by '+b.author:''}?`:"";
+  $("r_body").value=""; $("r_name").value=borrower||"";
+  openOverlay("reviewOverlay");
+  setTimeout(()=>$("r_body").focus(),60);
+}
+$("postReviewBtn").addEventListener("click",async()=>{
+  const body=$("r_body").value.trim();
+  if(!body && !reviewRating){ closeOverlay($("reviewOverlay")); return; } // nothing entered → just skip
+  const ok=await addReview({
+    book_id:reviewBookId,
+    reviewer:$("r_name").value.trim()||null,
+    rating:reviewRating||null,
+    body:body||null
+  });
+  if(ok){ closeOverlay($("reviewOverlay")); await loadData(); render(); toast("Thanks for the review!"); }
+});
+
+function starStr(n){ n=Math.max(0,Math.min(5,n||0)); return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,5-n); }
+function openReviews(bookId){
+  reviewsListBookId=bookId;
+  const b=BOOKS.find(x=>x.id===bookId);
+  const list=reviewsFor(bookId);
+  $("reviewsListTitle").textContent=b?b.title:"Reviews";
+  const rated=list.filter(r=>r.rating);
+  const avg=rated.length?(rated.reduce((s,r)=>s+r.rating,0)/rated.length):0;
+  $("reviewsListSub").textContent = list.length
+    ? `${list.length} review${list.length>1?'s':''}${avg?` · avg ${avg.toFixed(1)}★`:''}`
+    : "";
+  $("reviewsList").innerHTML = list.length ? list.map(r=>`
+    <div class="review">
+      <button class="rv-del" data-delreview="${esc(r.id)}" title="Remove review">&times;</button>
+      ${r.rating?`<div class="rv-stars">${starStr(r.rating)}</div>`:""}
+      ${r.body?`<div class="rv-body">${esc(r.body)}</div>`:""}
+      <div class="rv-meta">${r.reviewer?esc(r.reviewer):"Anonymous"} &middot; ${fmtDate(r.created_at)}</div>
+    </div>`).join("") : '<div class="reviews-empty">No reviews yet.</div>';
+  openOverlay("reviewsListOverlay");
+}
+$("reviewsList").addEventListener("click",async e=>{
+  const d=e.target.closest("[data-delreview]");
+  if(!d) return;
+  if(confirm("Remove this review?")){
+    if(await deleteReview(d.getAttribute("data-delreview"))){
+      await loadData(); render();
+      if(reviewsListBookId) openReviews(reviewsListBookId);
+      toast("Review removed.");
     }
   }
 });
