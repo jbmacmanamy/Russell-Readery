@@ -189,6 +189,36 @@
     fill:var(--stamp-ink);letter-spacing:1px;
   }
   .card:has(.exlibris) .body{padding-right:80px;}
+
+  /* ---------- Library cards ---------- */
+  .card-status{font-size:14px;margin-top:6px;min-height:18px;}
+  .card-status.ok{color:var(--olive-deep);}
+  .card-status.bad{color:var(--rust);}
+  .cards-add{
+    background:#fff;border:1px dashed var(--line);border-radius:8px;
+    padding:14px;margin-bottom:16px;
+  }
+  .cards-add .field:last-of-type{margin-bottom:12px;}
+  .cards-list-label{
+    font-family:"Courier Prime",monospace;font-size:11px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;
+  }
+  .cards-list{max-height:230px;overflow:auto;}
+  .card-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 12px;border:1px solid var(--line);border-radius:6px;
+    background:#fff;margin-bottom:7px;
+  }
+  .card-row .who{font-size:16px;}
+  .card-row .num{
+    font-family:"Courier Prime",monospace;font-size:13px;color:var(--muted);
+    margin-left:8px;letter-spacing:1px;
+  }
+  .card-row .stat-out{
+    font-family:"Courier Prime",monospace;font-size:10px;letter-spacing:1px;
+    text-transform:uppercase;color:var(--rust);margin-left:8px;
+  }
+  .card-empty{color:var(--muted);font-style:italic;font-size:15px;padding:6px 2px;}
   .card .hdr.overdue{background:#9B1B0E;}
   .checkout-line.overdue{color:#9B1B0E;}
   .checkout-line.overdue b{color:#9B1B0E;}
@@ -342,6 +372,7 @@
     <span class="grow"></span>
     <button class="btn olive owner-only" id="addBtn">+ Add book</button>
     <button class="btn ghost owner-only" id="importBtn">Import CSV</button>
+    <button class="btn ghost owner-only" id="cardsBtn">Library cards</button>
   </div>
 
   <div class="result-count" id="resultCount"></div>
@@ -375,11 +406,33 @@
   <div class="modal">
     <h2>Check out</h2>
     <p class="hint" id="checkoutBookName"></p>
-    <div class="field"><label>Borrower name *</label><input id="c_name" type="text" placeholder="Who's taking it home?" /></div>
+    <div class="field">
+      <label>Library card number *</label>
+      <input id="c_card" type="text" inputmode="numeric" placeholder="Enter your card number" autocomplete="off" />
+      <div class="card-status" id="c_cardStatus"></div>
+    </div>
     <div class="field"><label>Due back (optional)</label><input id="c_due" type="date" /></div>
     <div class="modal-actions">
       <button class="btn ghost" data-close>Cancel</button>
       <button class="btn" id="confirmCheckoutBtn">Stamp it out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Library cards modal (owner) ===== -->
+<div class="overlay" id="cardsOverlay">
+  <div class="modal">
+    <h2>Library cards</h2>
+    <p class="hint">Issue a card to a borrower. A valid card number is required to check books out.</p>
+    <div class="cards-add">
+      <div class="field"><label>Name *</label><input id="m_name" type="text" placeholder="e.g. Dottie Russell" /></div>
+      <div class="field"><label>Card number *</label><input id="m_card" type="text" inputmode="numeric" placeholder="e.g. 0421" autocomplete="off" /></div>
+      <button class="btn olive" id="addMemberBtn">Issue card</button>
+    </div>
+    <div class="cards-list-label">Current cardholders</div>
+    <div class="cards-list" id="cardsList"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close>Done</button>
     </div>
   </div>
 </div>
@@ -447,6 +500,10 @@ function previewSeed(){
     ],
     checkouts:[
       {id:"c1",book_id:"p3",borrower:"Dottie",checked_out_at:"2026-05-20",due_date:"2026-06-20",returned_at:null}
+    ],
+    members:[
+      {id:"m1",name:"Dottie",card_number:"0421",created_at:"2026-01-01"},
+      {id:"m2",name:"Sam Vimes",card_number:"1007",created_at:"2026-01-03"}
     ]
   };
 }
@@ -459,32 +516,73 @@ function previewSave(s){ try{ localStorage.setItem(PREVIEW_KEY, JSON.stringify(s
 /* ---------------- Data layer ---------------- */
 let BOOKS = [];
 let ACTIVE = {}; // book_id -> checkout
+let MEMBERS = []; // library card holders
 
 async function loadData(){
   if (isConfigured){
-    if (!sb){ showLoadError({message: initError||"Supabase client not initialized."}); BOOKS=[]; ACTIVE={}; return; }
-    let books, cos, be, ce;
+    if (!sb){ showLoadError({message: initError||"Supabase client not initialized."}); BOOKS=[]; ACTIVE={}; MEMBERS=[]; return; }
+    let books, cos, mem, be, ce, me;
     try {
       const r = await Promise.all([
         sb.from("books").select("*").order("title"),
-        sb.from("checkouts").select("*").is("returned_at", null)
+        sb.from("checkouts").select("*").is("returned_at", null),
+        sb.from("members").select("*").order("name")
       ]);
       books = r[0].data; be = r[0].error;
       cos   = r[1].data; ce = r[1].error;
+      mem   = r[2].data; me = r[2].error;
     } catch(netErr){
       showLoadError({message:"Network request failed — the browser couldn't reach Supabase. Usually a wrong SUPABASE_URL, an http:// URL on an https page, or a blocker. Details: "+(netErr&&netErr.message?netErr.message:netErr)});
-      BOOKS=[]; ACTIVE={}; return;
+      BOOKS=[]; ACTIVE={}; MEMBERS=[]; return;
     }
-    if (be || ce){ const e=be||ce; console.error(e); showLoadError(e); BOOKS=[]; ACTIVE={}; return; }
+    if (be || ce){ const e=be||ce; console.error(e); showLoadError(e); BOOKS=[]; ACTIVE={}; MEMBERS=[]; return; }
     BOOKS = books || [];
     ACTIVE = {};
     (cos||[]).forEach(c=>{ ACTIVE[c.book_id]=c; });
+    // members table may not exist yet on older setups — don't break the whole app
+    if (me){ console.warn("Could not load members (run the latest schema.sql?):", me); MEMBERS=[]; }
+    else MEMBERS = mem || [];
   } else {
     const s = previewLoad();
     BOOKS = s.books.slice().sort((a,b)=>(a.title||"").localeCompare(b.title||""));
     ACTIVE = {};
     s.checkouts.filter(c=>!c.returned_at).forEach(c=>{ ACTIVE[c.book_id]=c; });
+    MEMBERS = (s.members||[]).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   }
+}
+
+/* Card lookup — normalized, forgiving of spaces/case */
+function normCard(n){ return String(n==null?"":n).trim().toLowerCase(); }
+function memberByCard(num){
+  const key=normCard(num);
+  if(!key) return null;
+  return MEMBERS.find(m=>normCard(m.card_number)===key) || null;
+}
+
+async function addMember(name, card){
+  const row={name, card_number:card};
+  if (isConfigured){
+    const {error} = await sb.from("members").insert([row]);
+    if (error){
+      toast(error.code==="23505"?"That card number is already issued.":"Could not issue card.");
+      console.error(error); return false;
+    }
+  } else {
+    const s=previewLoad(); s.members=s.members||[];
+    s.members.push(Object.assign({id:"m"+Date.now(),created_at:new Date().toISOString()},row));
+    previewSave(s);
+  }
+  return true;
+}
+
+async function deleteMember(id){
+  if (isConfigured){
+    const {error} = await sb.from("members").delete().eq("id", id);
+    if (error){ toast("Could not remove card."); console.error(error); return false; }
+  } else {
+    const s=previewLoad(); s.members=(s.members||[]).filter(m=>m.id!==id); previewSave(s);
+  }
+  return true;
 }
 
 async function addBook(b){
@@ -744,19 +842,72 @@ $("saveBookBtn").addEventListener("click",async()=>{
 
 /* Checkout */
 let checkoutTarget=null;
+function updateCardStatus(){
+  const el=$("c_cardStatus"); const v=$("c_card").value.trim();
+  if(!v){
+    if(!MEMBERS.length){ el.textContent="No library cards issued yet — ask the librarian."; el.className="card-status bad"; }
+    else { el.textContent=""; el.className="card-status"; }
+    return;
+  }
+  const m=memberByCard(v);
+  if(m){ el.textContent="✓ "+m.name; el.className="card-status ok"; }
+  else { el.textContent="No card matches that number."; el.className="card-status bad"; }
+}
 function startCheckout(id){
   checkoutTarget=id;
   const b=BOOKS.find(x=>x.id===id);
   $("checkoutBookName").textContent=b?`"${b.title}"${b.author?' by '+b.author:''}`:"";
-  $("c_name").value=""; $("c_due").value="";
+  $("c_card").value=""; $("c_due").value=""; updateCardStatus();
   openOverlay("checkoutOverlay");
-  setTimeout(()=>$("c_name").focus(),50);
+  setTimeout(()=>$("c_card").focus(),50);
 }
+$("c_card").addEventListener("input",updateCardStatus);
 $("confirmCheckoutBtn").addEventListener("click",async()=>{
-  const name=$("c_name").value.trim();
-  if(!name){ toast("Who's borrowing it?"); return; }
-  const ok=await checkOut(checkoutTarget,name,$("c_due").value||null);
-  if(ok){ closeOverlay($("checkoutOverlay")); await loadData(); render(); toast("Stamped out. Happy reading!"); }
+  const card=$("c_card").value.trim();
+  if(!card){ toast("A library card number is required."); return; }
+  const m=memberByCard(card);
+  if(!m){ toast("That card number isn't recognized."); $("c_card").focus(); return; }
+  const ok=await checkOut(checkoutTarget,m.name,$("c_due").value||null);
+  if(ok){ closeOverlay($("checkoutOverlay")); await loadData(); render(); toast("Stamped out. Happy reading, "+m.name.split(" ")[0]+"!"); }
+});
+
+/* Library cards manager (owner) */
+function renderCardsList(){
+  const el=$("cardsList");
+  if(!MEMBERS.length){ el.innerHTML='<div class="card-empty">No cards issued yet.</div>'; return; }
+  const outByName={};
+  Object.values(ACTIVE).forEach(c=>{ outByName[c.borrower]=(outByName[c.borrower]||0)+1; });
+  el.innerHTML = MEMBERS.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).map(m=>{
+    const n=outByName[m.name]||0;
+    return `<div class="card-row">
+      <span><span class="who">${esc(m.name)}</span><span class="num">#${esc(m.card_number)}</span>${n?`<span class="stat-out">${n} out</span>`:""}</span>
+      <button class="btn danger" data-delmember="${esc(m.id)}">Remove</button>
+    </div>`;
+  }).join("");
+}
+$("cardsBtn").addEventListener("click",()=>{
+  $("m_name").value=""; $("m_card").value="";
+  renderCardsList();
+  openOverlay("cardsOverlay");
+  setTimeout(()=>$("m_name").focus(),50);
+});
+$("addMemberBtn").addEventListener("click",async()=>{
+  const name=$("m_name").value.trim();
+  const card=$("m_card").value.trim();
+  if(!name){ toast("Enter the cardholder's name."); return; }
+  if(!card){ toast("Enter a card number."); return; }
+  if(memberByCard(card)){ toast("That card number is already issued."); return; }
+  const ok=await addMember(name, card);
+  if(ok){ await loadData(); $("m_name").value=""; $("m_card").value=""; renderCardsList(); $("m_name").focus(); toast("Card issued to "+name+"."); }
+});
+$("cardsList").addEventListener("click",async e=>{
+  const d=e.target.closest("[data-delmember]");
+  if(!d) return;
+  const id=d.getAttribute("data-delmember");
+  const m=MEMBERS.find(x=>x.id===id);
+  if(confirm(`Remove ${m?m.name:"this"} card? Books already checked out stay out.`)){
+    if(await deleteMember(id)){ await loadData(); renderCardsList(); toast("Card removed."); }
+  }
 });
 
 /* CSV import */
