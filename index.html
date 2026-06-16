@@ -29,6 +29,7 @@
     --muted:#7C93A0;
     --line:#CBD9E1;
     --shadow:rgba(30,70,100,.16);
+    --stamp-ink:#3a57a8;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -175,13 +176,10 @@
   .card:hover{transform:translateY(-3px);box-shadow:0 8px 20px var(--shadow);}
 
   /* ---------- Ex Libris stamp (checked-out cards) ---------- */
-  --stamp-ink:#3a57a8;
   .exlibris{
-    position:absolute;top:40px;right:12px;width:74px;height:auto;
-    transform:rotate(-7deg);opacity:.82;pointer-events:none;z-index:2;
+    position:absolute;top:38px;right:12px;width:78px;height:auto;
+    transform:rotate(-7deg);opacity:.8;pointer-events:none;z-index:2;
     color:var(--stamp-ink);
-    /* faint rubber-stamp unevenness */
-    filter:saturate(1.05) contrast(1.05);
     mix-blend-mode:multiply;
   }
   .exlibris text{
